@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>حاسبة كمية مياه الري 💧</title>
+<style>
+body {
+  height: 100%;
+  margin: 0;
+  padding-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f3f6f4;
+  background-image: url(./download.webp);
+  background-repeat: no-repeat;
+  background-size: cover;
+  font-family: "Segoe UI", sans-serif;
+}
+
+form {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  width: 300px;
+  text-align: right;
+}
+
+input, select, button {
+  margin: 8px 0;
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  text-align: right;
+}
+
+button {
+  background: #2a7b3f;
+  color: white;
+  cursor: pointer;
+  text-align: center;
+  font-weight: bold;
+}
+
+button:hover {
+  background: #256c39;
+}
+
+#alert {
+  text-align: center;
+  font-weight: bold;
+  margin-top: 10px;
+}
+</style>
+</head>
+<body>
+ 
+<form id="waterForm">
+  <h2 style="text-align: center;">🌿 الفلاح الذكي</h2>
+  
+  <label>درجة الحرارة (°C)</label>
+  <input type="number" id="temp" required>
+
+  <label>الرطوبة (%)</label>
+  <input type="number" id="humidity" required>
+
+  <label>رطوبة التربة (%)</label>
+  <input type="number" id="soil" required>
+
+  <label>نوع المحصول</label>
+  <select id="crop">
+    <option value="Tomato">طماطم</option>
+    <option value="Wheat">قمح</option>
+    <option value="Corn">ذرة</option>
+    <option value="Cucumber">خيار</option>
+  </select>
+
+  <label>المساحة (م²)</label>
+  <input type="number" id="area" required>
+
+  <button type="submit">احسب كمية الماء</button>
+  <p id="result"></p>
+
+  <hr>
+  <button type="button" id="pumpOn">🚰 شغّل المضخة</button>
+  <button type="button" id="pumpOff">🛑 أوقف المضخة</button>
+  <p id="alert"></p>
+</form>
+
+<script>
+  // حساب كمية المياه
+  document.getElementById("waterForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const body = {
+      temperature: +document.getElementById("temp").value,
+      humidity: +document.getElementById("humidity").value,
+      soil: +document.getElementById("soil").value,
+      crop: document.getElementById("crop").value,
+      area: +document.getElementById("area").value
+    };
+
+    document.getElementById("result").textContent = "⏳ جاري الحساب...";
+    try {
+      const res = await fetch("http://localhost:3000/calculate-water", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (data.water_needed) {
+        document.getElementById("result").textContent = `💧 كمية الماء المطلوبة: ${data.water_needed.toFixed(2)} لتر`;
+      } else {
+        document.getElementById("result").textContent = "❌ خطأ في الحساب أو الاتصال بالخادم.";
+      }
+    } catch (err) {
+      document.getElementById("result").textContent = "⚠️ لم يتم الاتصال بالخادم.";
+      console.error(err);
+    }
+  });
+
+  // تشغيل المضخة
+  document.getElementById("pumpOn").addEventListener("click", async () => {
+    document.getElementById("alert").textContent = "⏳ جاري تشغيل المضخة...";
+    try {
+      const res = await fetch("http://localhost:3000/pump/on", { method: "POST" });
+      const data = await res.json();
+      document.getElementById("alert").textContent = "✅ تم تشغيل المضخة بنجاح!";
+    } catch (err) {
+      document.getElementById("alert").textContent = "⚠️ فشل تشغيل المضخة.";
+    }
+  });
+
+  // إيقاف المضخة
+  document.getElementById("pumpOff").addEventListener("click", async () => {
+    document.getElementById("alert").textContent = "⏳ جاري إيقاف المضخة...";
+    try {
+      const res = await fetch("http://localhost:3000/pump/off", { method: "POST" });
+      const data = await res.json();
+      document.getElementById("alert").textContent = "🚫 تم إيقاف المضخة.";
+    } catch (err) {
+      document.getElementById("alert").textContent = "⚠️ فشل إيقاف المضخة.";
+    }
+  });
+</script>
+</body>
+</html>
